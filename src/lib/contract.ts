@@ -1,6 +1,6 @@
 // 👉 PASTE YOUR DEPLOYED CONTRACT ADDRESS FROM GANACHE HERE
 // Run `truffle migrate` and copy the address shown after "contract address:"
-export const CONTRACT_ADDRESS = "0xYourContractAddressHere";
+export const CONTRACT_ADDRESS = "0xdE23FF31E9B8d782cC40E741AE8b9d7DE11AdEd8";
 
 // ABI for BookingContract — bookSlot(string uname, uint _day, uint _fromTime, uint _toTime) payable
 export const CONTRACT_ABI: any[] = [
