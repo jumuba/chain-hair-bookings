@@ -1,12 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { BrowserProvider, Contract, parseEther } from "ethers";
 import { SalonNav } from "@/components/SalonNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Check, Wallet } from "lucide-react";
-import { CONTRACT_ABI, CONTRACT_ADDRESS, BOOKING_PRICE_ETH } from "@/lib/contract";
+import { CalendarCheck, Check } from "lucide-react";
 
 export const Route = createFileRoute("/book")({
   component: Book,
@@ -30,33 +28,24 @@ function Book() {
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [txHash, setTxHash] = useState<string | null>(null);
+  const [bookingRef, setBookingRef] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const eth = (window as any).ethereum;
-    if (!eth) {
-      setError("MetaMask not detected. Please install it.");
-      setLoading(false);
-      return;
-    }
     try {
-      await eth.request({ method: "eth_requestAccounts" });
-      const provider = new BrowserProvider(eth);
-      const signer = await provider.getSigner();
-      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      // Convert "YYYY-MM-DD" -> YYYYMMDD (uint) and "HH:MM" -> HHMM (uint)
-      const day = parseInt(date.replace(/-/g, ""), 10);
-      const [fh, fm] = time.split(":").map(Number);
-      const fromTime = fh * 100 + fm;
-      const toTime = fromTime + 100; // 1h slot
-      const tx = await contract.bookSlot(name || "guest", day, fromTime, toTime, {
-        value: parseEther(BOOKING_PRICE_ETH),
-      });
-      const receipt = await tx.wait();
-      setTxHash(receipt?.hash ?? tx.hash);
+      const booking = {
+        id: `ML-${Date.now().toString(36).toUpperCase()}`,
+        name: name.trim(),
+        service,
+        date,
+        time,
+        createdAt: new Date().toISOString(),
+      };
+      const existing = JSON.parse(localStorage.getItem("maison-lumiere-bookings") ?? "[]");
+      localStorage.setItem("maison-lumiere-bookings", JSON.stringify([...existing, booking]));
+      setBookingRef(booking.id);
       setConfirmed(true);
     } catch (err: any) {
       console.error(err);
