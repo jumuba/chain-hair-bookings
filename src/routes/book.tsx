@@ -69,10 +69,10 @@ function Book() {
           <p className="mt-4 text-muted-foreground">
             Your <strong>{service}</strong> is reserved on <strong>{date}</strong> at <strong>{time}</strong>.
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">A confirmation has been recorded on-chain.</p>
-          {txHash && (
+          <p className="mt-2 text-sm text-muted-foreground">A confirmation has been saved on this computer.</p>
+          {bookingRef && (
             <p className="mt-2 break-all text-xs text-muted-foreground">
-              Tx: <span className="font-mono">{txHash}</span>
+              Ref: <span className="font-mono">{bookingRef}</span>
             </p>
           )}
           <Button onClick={() => setConfirmed(false)} variant="outline" className="mt-8 rounded-full">
@@ -151,14 +151,14 @@ function Book() {
           </div>
 
           <Button type="submit" disabled={loading} size="lg" className="w-full rounded-full">
-            <Wallet className="mr-2 h-4 w-4" />
-            {loading ? "Confirming…" : "Confirm with MetaMask"}
+            <CalendarCheck className="mr-2 h-4 w-4" />
+            {loading ? "Saving…" : "Confirm booking"}
           </Button>
           {error && (
             <p className="text-center text-sm text-destructive">{error}</p>
           )}
           <p className="text-center text-xs text-muted-foreground">
-            Your booking will be signed by your wallet and stored on-chain.
+            Your booking will be saved locally on this computer.
           </p>
         </form>
       </section>
