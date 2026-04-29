@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { BrowserProvider, Contract, parseEther } from "ethers";
 import { SalonNav } from "@/components/SalonNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Check, Wallet } from "lucide-react";
+import { CONTRACT_ABI, CONTRACT_ADDRESS, BOOKING_PRICE_ETH } from "@/lib/contract";
 
 export const Route = createFileRoute("/book")({
   component: Book,
@@ -27,23 +29,36 @@ function Book() {
   const [time, setTime] = useState(TIMES[0]);
   const [confirmed, setConfirmed] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [txHash, setTxHash] = useState<string | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     setLoading(true);
     const eth = (window as any).ethereum;
-    if (eth) {
-      try {
-        await eth.request({ method: "eth_requestAccounts" });
-      } catch {
-        // user rejected
-      }
-    }
-    // The on-chain bookSlot call lives in your existing app.js / contract layer.
-    setTimeout(() => {
+    if (!eth) {
+      setError("MetaMask not detected. Please install it.");
       setLoading(false);
+      return;
+    }
+    try {
+      await eth.request({ method: "eth_requestAccounts" });
+      const provider = new BrowserProvider(eth);
+      const signer = await provider.getSigner();
+      const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const tx = await contract.bookSlot(service, date, time, {
+        value: parseEther(BOOKING_PRICE_ETH),
+      });
+      const receipt = await tx.wait();
+      setTxHash(receipt?.hash ?? tx.hash);
       setConfirmed(true);
-    }, 600);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.shortMessage || err?.message || "Transaction failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (confirmed) {
@@ -61,6 +76,11 @@ function Book() {
             Your <strong>{service}</strong> is reserved on <strong>{date}</strong> at <strong>{time}</strong>.
           </p>
           <p className="mt-2 text-sm text-muted-foreground">A confirmation has been recorded on-chain.</p>
+          {txHash && (
+            <p className="mt-2 break-all text-xs text-muted-foreground">
+              Tx: <span className="font-mono">{txHash}</span>
+            </p>
+          )}
           <Button onClick={() => setConfirmed(false)} variant="outline" className="mt-8 rounded-full">
             Book another
           </Button>
@@ -140,6 +160,9 @@ function Book() {
             <Wallet className="mr-2 h-4 w-4" />
             {loading ? "Confirming…" : "Confirm with MetaMask"}
           </Button>
+          {error && (
+            <p className="text-center text-sm text-destructive">{error}</p>
+          )}
           <p className="text-center text-xs text-muted-foreground">
             Your booking will be signed by your wallet and stored on-chain.
           </p>
