@@ -1,22 +1,24 @@
 // 👉 PASTE YOUR DEPLOYED CONTRACT ADDRESS FROM GANACHE HERE
+// Run `truffle migrate` and copy the address shown after "contract address:"
 export const CONTRACT_ADDRESS = "0xYourContractAddressHere";
 
-// 👉 PASTE YOUR CONTRACT ABI (JSON array) HERE
-// You can find it in your Truffle/Hardhat build folder (e.g. build/contracts/BookingContract.json -> "abi" field)
+// ABI for BookingContract — bookSlot(string uname, uint _day, uint _fromTime, uint _toTime) payable
 export const CONTRACT_ABI: any[] = [
-  // Example shape — replace with your real ABI:
-  // {
-  //   "inputs": [
-  //     { "internalType": "string", "name": "service", "type": "string" },
-  //     { "internalType": "string", "name": "date", "type": "string" },
-  //     { "internalType": "string", "name": "time", "type": "string" }
-  //   ],
-  //   "name": "bookSlot",
-  //   "outputs": [],
-  //   "stateMutability": "payable",
-  //   "type": "function"
-  // }
+  {
+    "constant": false,
+    "inputs": [
+      { "internalType": "string", "name": "uname", "type": "string" },
+      { "internalType": "uint256", "name": "_day", "type": "uint256" },
+      { "internalType": "uint256", "name": "_fromTime", "type": "uint256" },
+      { "internalType": "uint256", "name": "_toTime", "type": "uint256" }
+    ],
+    "name": "bookSlot",
+    "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }],
+    "payable": true,
+    "stateMutability": "payable",
+    "type": "function"
+  }
 ];
 
-// Price sent with the booking (in ETH). Adjust to match your contract.
+// Price sent with the booking (in ETH).
 export const BOOKING_PRICE_ETH = "0.01";
