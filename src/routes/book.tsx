@@ -47,7 +47,12 @@ function Book() {
       const provider = new BrowserProvider(eth);
       const signer = await provider.getSigner();
       const contract = new Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      const tx = await contract.bookSlot(service, date, time, {
+      // Convert "YYYY-MM-DD" -> YYYYMMDD (uint) and "HH:MM" -> HHMM (uint)
+      const day = parseInt(date.replace(/-/g, ""), 10);
+      const [fh, fm] = time.split(":").map(Number);
+      const fromTime = fh * 100 + fm;
+      const toTime = fromTime + 100; // 1h slot
+      const tx = await contract.bookSlot(name || "guest", day, fromTime, toTime, {
         value: parseEther(BOOKING_PRICE_ETH),
       });
       const receipt = await tx.wait();
