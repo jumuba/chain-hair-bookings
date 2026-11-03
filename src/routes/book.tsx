@@ -1,10 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ethers } from "ethers";
 import { SalonNav } from "@/components/SalonNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CalendarCheck, Check } from "lucide-react";
+import BookingContract from "../../build/contracts/BookingContract.json";
+
+declare global {
+  interface Window {
+    ethereum?: any;
+  }
+}
 
 export const Route = createFileRoute("/book")({
   component: Book,
@@ -34,18 +42,61 @@ function Book() {
     e.preventDefault();
     setError(null);
     setLoading(true);
+
     try {
+      if (!window.ethereum) {
+        throw new Error("MetaMask is not installed");
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = await provider.getSigner();
+
+      const contractAddress = "0x39e440B2a7f24a0FC2BA3F9951e9399C563eA6C2";
+
+      const contract = new ethers.Contract(
+        contractAddress,
+        BookingContract.abi,
+        signer
+      );
+
+      const day = Number(date.replaceAll("-", ""));
+      const fromTime = Number(time.replace(":", ""));
+      const toTime = fromTime + 100;
+
+      // 1st MetaMask popup: create/open slot on blockchain
+      const openTx = await contract.openSlots(
+        day,
+        day,
+        fromTime,
+        toTime
+      );
+
+      await openTx.wait();
+
+      // 2nd MetaMask popup: book slot on blockchain
+      const tx = await contract.bookSlot(
+        name.trim(),
+        day,
+        fromTime,
+        toTime
+      );
+
+      await tx.wait();
+
       const booking = {
-        id: `ML-${Date.now().toString(36).toUpperCase()}`,
+        id: tx.hash,
         name: name.trim(),
         service,
         date,
         time,
         createdAt: new Date().toISOString(),
       };
+
       const existing = JSON.parse(localStorage.getItem("maison-lumiere-bookings") ?? "[]");
       localStorage.setItem("maison-lumiere-bookings", JSON.stringify([...existing, booking]));
-      setBookingRef(booking.id);
+
+      setBookingRef(tx.hash);
       setConfirmed(true);
     } catch (err: any) {
       console.error(err);
@@ -69,10 +120,10 @@ function Book() {
           <p className="mt-4 text-muted-foreground">
             Your <strong>{service}</strong> is reserved on <strong>{date}</strong> at <strong>{time}</strong>.
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">A confirmation has been saved on this computer.</p>
+          <p className="mt-2 text-sm text-muted-foreground">A blockchain transaction has confirmed this booking.</p>
           {bookingRef && (
             <p className="mt-2 break-all text-xs text-muted-foreground">
-              Ref: <span className="font-mono">{bookingRef}</span>
+              Tx Hash: <span className="font-mono">{bookingRef}</span>
             </p>
           )}
           <Button onClick={() => setConfirmed(false)} variant="outline" className="mt-8 rounded-full">
@@ -152,13 +203,13 @@ function Book() {
 
           <Button type="submit" disabled={loading} size="lg" className="w-full rounded-full">
             <CalendarCheck className="mr-2 h-4 w-4" />
-            {loading ? "Saving…" : "Confirm booking"}
+            {loading ? "Confirming on-chain…" : "Confirm booking"}
           </Button>
-          {error && (
-            <p className="text-center text-sm text-destructive">{error}</p>
-          )}
+
+          {error && <p className="text-center text-sm text-destructive">{error}</p>}
+
           <p className="text-center text-xs text-muted-foreground">
-            Your booking will be saved locally on this computer.
+            Your booking will be confirmed on-chain through MetaMask.
           </p>
         </form>
       </section>
